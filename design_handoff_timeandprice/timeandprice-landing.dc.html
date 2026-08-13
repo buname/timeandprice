@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; background:#101011; }
+  body { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; color:#dcd9df; }
+  a { color:#7c8798; text-decoration:none; }
+  a:hover { color:#c4cad3; }
+  ::selection { background:rgba(124,135,152,0.20); }
+  input::placeholder { color:#7c7982; }
+  body::before {
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.32;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.2'/%3E%3C/svg%3E");
+  }
+  @keyframes tp-letter {
+    0%   { opacity:0; transform:scale(0.92) translateY(7px); filter:blur(5px); }
+    100% { opacity:1; transform:scale(1) translateY(0); filter:blur(0); }
+  }
+  @keyframes tp-spiral-in {
+    0%   { opacity:0; transform:translateY(-7vh) scale(0.965); }
+    100% { opacity:1; transform:translateY(0) scale(1); }
+  }
+  @keyframes tp-spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+  @keyframes tp-breathe { 0%,100% { transform:scale(1); } 50% { transform:scale(1.02); } }
+  @keyframes tp-fade-up { 0% { opacity:0; transform:translateY(16px); } 100% { opacity:1; transform:translateY(0); } }
+  @keyframes tp-bob { 0%,100% { transform:translateY(0); opacity:0.4; } 50% { transform:translateY(6px); opacity:0.9; } }
+</style>
+</helmet>
+
+<div style="background:#101011; color:#dcd9df; min-height:100vh; overflow-x:hidden;">
+
+  <header style="position:fixed; top:0; left:0; right:0; z-index:40; display:flex; align-items:center; justify-content:space-between; padding:22px 40px; backdrop-filter:blur(14px); background:linear-gradient(#101011f5, #10101100); animation:tp-fade-up 800ms 2000ms cubic-bezier(0.22,1,0.36,1) both;">
+    <span style="font-size:16px; font-weight:400; font-size:24px; font-weight:300; letter-spacing:0; color:#dcd9df;">φ</span>
+    <nav style="display:flex; gap:34px; align-items:center; font-size:12px; font-weight:300; letter-spacing:0.16em; color:#a19ea7;">
+      <a href="#preview" style="color:#a19ea7;" style-hover="color:#dcd9df;">the day</a>
+    </nav>
+  </header>
+
+  <section style="position:relative; z-index:1; height:100vh; min-height:680px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+
+    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,0) 2%, #000 26%, #000 60%, rgba(0,0,0,0) 92%), radial-gradient(58% 34% at 50% 62%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.18) 46%, #000 82%); -webkit-mask-composite:source-in; mask-image:linear-gradient(180deg, rgba(0,0,0,0) 2%, #000 26%, #000 60%, rgba(0,0,0,0) 92%), radial-gradient(58% 34% at 50% 62%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.18) 46%, #000 82%); mask-composite:intersect;">
+      <div style="width:min(96vh, 1000px); height:min(96vh, 1000px); animation:tp-spiral-in 1400ms 700ms cubic-bezier(0.22,1,0.36,1) both;">
+        <div style="width:100%; height:100%; opacity:0.5; animation:tp-breathe 5000ms 2200ms ease-in-out infinite;">
+          <div style="width:100%; height:100%; animation:tp-spin 120s linear infinite;">
+            <img src="assets/spiral-particles.svg" alt="" style="width:100%; height:100%; display:block; filter:invert(1);">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 24px;">
+      <h1 style="margin:0; font-size:clamp(38px, 8vw, 104px); font-weight:200; letter-spacing:0.16em; line-height:1; color:#dcd9df; text-indent:0.16em; display:flex;">
+        <span style="display:inline-block; animation:tp-letter 760ms 0ms cubic-bezier(0.22,1,0.36,1) both;">t</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 20ms cubic-bezier(0.22,1,0.36,1) both;">i</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 40ms cubic-bezier(0.22,1,0.36,1) both;">m</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 60ms cubic-bezier(0.22,1,0.36,1) both;">e</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 80ms cubic-bezier(0.22,1,0.36,1) both; color:#7c8798;">a</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 100ms cubic-bezier(0.22,1,0.36,1) both; color:#7c8798;">n</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 120ms cubic-bezier(0.22,1,0.36,1) both; color:#7c8798;">d</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 140ms cubic-bezier(0.22,1,0.36,1) both;">p</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 160ms cubic-bezier(0.22,1,0.36,1) both;">r</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 180ms cubic-bezier(0.22,1,0.36,1) both;">i</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 200ms cubic-bezier(0.22,1,0.36,1) both;">c</span>
+        <span style="display:inline-block; animation:tp-letter 760ms 220ms cubic-bezier(0.22,1,0.36,1) both;">e</span>
+      </h1>
+      <p style="margin:30px 0 0; max-width:520px; font-size:15px; font-weight:300; line-height:1.75; letter-spacing:0.03em; color:#a19ea7; animation:tp-fade-up 900ms 1700ms cubic-bezier(0.22,1,0.36,1) both;">
+        Every hour of your day, logged and priced. See where the time went, and what it was worth.
+      </p>
+      <div style="display:flex; gap:14px; margin-top:38px; animation:tp-fade-up 900ms 1850ms cubic-bezier(0.22,1,0.36,1) both;">
+        <a href="#preview" style="padding:13px 30px; border-radius:999px; border:1px solid rgba(255,255,255,0.16); color:#c5c2cb; font-size:13px; font-weight:300; letter-spacing:0.1em; transition:border-color 340ms cubic-bezier(0.22,1,0.36,1), color 340ms;" style-hover="border-color:rgba(124,135,152,0.55); color:#7c8798;">See a day</a>
+      </div>
+    </div>
+
+    <div style="position:absolute; z-index:2; bottom:44px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:12px; animation:tp-fade-up 900ms 2200ms cubic-bezier(0.22,1,0.36,1) both;">
+      <span style="font-size:10px; font-weight:300; letter-spacing:0.34em; color:#7c7982;">SCROLL</span>
+      <span style="display:block; width:1px; height:46px; background:linear-gradient(#dcd9df, rgba(255,255,255,0)); animation:tp-bob 3200ms ease-in-out infinite;"></span>
+    </div>
+  </section>
+
+  <section id="preview" style="position:relative; z-index:1; padding:150px 32px 130px; max-width:1120px; margin:0 auto;">
+    <div>
+      <span data-reveal="1" style="display:inline-block; opacity:0; transform:translateY(20px); transition:opacity 620ms cubic-bezier(0.22,1,0.36,1), transform 620ms cubic-bezier(0.22,1,0.36,1); font-size:10px; font-weight:400; letter-spacing:0.34em; color:#7c8798;">TUESDAY, 12 AUGUST</span>
+      <h2 data-reveal="1" style="opacity:0; transform:translateY(20px); transition:opacity 620ms cubic-bezier(0.22,1,0.36,1) 100ms, transform 620ms cubic-bezier(0.22,1,0.36,1) 100ms; margin:20px 0 0; font-size:clamp(30px,4.2vw,48px); font-weight:200; letter-spacing:0.01em; letter-spacing:0.02em; color:#dcd9df;">Where the day went.</h2>
+      <p data-reveal="1" style="opacity:0; transform:translateY(20px); transition:opacity 620ms cubic-bezier(0.22,1,0.36,1) 200ms, transform 620ms cubic-bezier(0.22,1,0.36,1) 200ms; margin:16px 0 0; max-width:460px; font-size:14px; font-weight:300; line-height:1.7; color:#a19ea7;">One continuous timeline, priced at {{ rateLabel }} an hour. Nothing to start, nothing to stop.</p>
+    </div>
+
+    <div data-reveal="1" style="opacity:0; transform:translateY(22px); transition:opacity 660ms cubic-bezier(0.22,1,0.36,1) 120ms, transform 660ms cubic-bezier(0.22,1,0.36,1) 120ms; margin-top:64px; padding:34px 34px 26px; border:1px solid rgba(255,255,255,0.09); border-radius:20px; background:rgba(255,255,255,0.045); backdrop-filter:blur(6px);">
+      <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:300; letter-spacing:0.2em; color:#7c7982; margin-bottom:14px;">
+        <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+      </div>
+      <div data-bars="1" style="position:relative; height:44px; border-radius:8px; background:rgba(255,255,255,0.06); overflow:hidden;">
+        <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="7">
+          <div style="position:absolute; top:0; bottom:0; left:{{ b.left }}; width:{{ b.width }}; background:{{ b.fill }}; transform-origin:left center; transform:scaleX(0); transition:transform 620ms cubic-bezier(0.22,1,0.36,1); transition-delay:{{ b.delay }};" title="{{ b.label }}"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:22px; margin-top:20px;">
+        <sc-for list="{{ legend }}" as="l" hint-placeholder-count="3">
+          <div style="display:flex; align-items:center; gap:9px; font-size:11px; font-weight:300; letter-spacing:0.08em; color:#a19ea7;">
+            <span style="width:9px; height:9px; border-radius:2px; background:{{ l.fill }};"></span>{{ l.name }}
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1.65fr) minmax(0,1fr); gap:26px; margin-top:26px; align-items:start;">
+      <div data-reveal="1" style="opacity:0; transform:translateY(22px); transition:opacity 660ms cubic-bezier(0.22,1,0.36,1) 180ms, transform 660ms cubic-bezier(0.22,1,0.36,1) 180ms; border:1px solid rgba(255,255,255,0.09); border-radius:20px; background:rgba(255,255,255,0.045); backdrop-filter:blur(6px); padding:10px 0;">
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+          <div style="display:grid; grid-template-columns:58px 84px minmax(0,1fr) auto; align-items:center; gap:16px; padding:17px 28px; border-bottom:1px solid rgba(255,255,255,0.06); transition:background 340ms cubic-bezier(0.22,1,0.36,1);" style-hover="background:rgba(124,135,152,0.06);">
+            <span style="font-size:11px; font-weight:300; letter-spacing:0.09em; color:#7c7982; font-variant-numeric:tabular-nums;">{{ r.start }}</span>
+            <span style="display:flex; align-items:center; gap:10px; font-size:13px; font-weight:400; color:#dcd9df; font-variant-numeric:tabular-nums;"><span style="width:3px; height:22px; border-radius:2px; background:{{ r.fill }};"></span>{{ r.dur }}</span>
+            <span style="font-size:13px; font-weight:300; letter-spacing:0.02em; color:#a19ea7; line-height:1.4;">{{ r.label }}</span>
+            <span style="font-size:13px; font-weight:400; letter-spacing:0.02em; color:{{ r.priceColor }}; font-variant-numeric:tabular-nums;">{{ r.price }}</span>
+          </div>
+        </sc-for>
+        <div style="padding:18px 28px 12px; font-size:11px; font-weight:300; letter-spacing:0.06em; color:#7c7982;">Lunch is tracked but not billed.</div>
+      </div>
+
+      <div data-reveal="1" data-count="1" style="opacity:0; transform:translateY(22px); transition:opacity 660ms cubic-bezier(0.22,1,0.36,1) 240ms, transform 660ms cubic-bezier(0.22,1,0.36,1) 240ms; border:1px solid rgba(124,135,152,0.32); border-radius:20px; padding:32px 30px; background:rgba(255,255,255,0.045); box-shadow:0 22px 60px rgba(0,0,0,0.5);">
+        <span style="font-size:10px; font-weight:400; letter-spacing:0.3em; color:#7c8798;">DAY TOTAL</span>
+        <div style="margin-top:26px; font-size:54px; font-weight:200; letter-spacing:0.01em; color:#dcd9df; font-variant-numeric:tabular-nums; line-height:1;">{{ totalPrice }}</div>
+        <div style="margin-top:10px; font-size:13px; font-weight:300; letter-spacing:0.05em; color:#a19ea7;">{{ billableLabel }} billable of {{ trackedLabel }} tracked</div>
+        <div style="height:1px; background:rgba(255,255,255,0.09); margin:28px 0;"></div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:300; color:#a19ea7;"><span>Rate</span><span style="color:#dcd9df; font-variant-numeric:tabular-nums;">{{ rateLabel }} / hr</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:300; color:#a19ea7;"><span>Deep work</span><span style="color:#dcd9df; font-variant-numeric:tabular-nums;">{{ deepLabel }}</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:300; color:#a19ea7;"><span>Meetings</span><span style="color:#dcd9df; font-variant-numeric:tabular-nums;">1h 45m</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:300; color:#a19ea7;"><span>Admin &amp; switching</span><span style="color:#dcd9df; font-variant-numeric:tabular-nums;">1h 55m</span></div>
+        </div>
+        <div style="margin-top:30px; padding:14px 16px; border-radius:12px; background:rgba(124,135,152,0.10); font-size:12px; font-weight:300; line-height:1.6; color:#bbb8c1;">Week to date: <span style="color:#c4cad3;">{{ weekLabel }}</span> across 4 clients.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="position:relative; z-index:1; padding:34px 40px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:300; letter-spacing:0.16em; color:#7c7982;">
+    <span style="font-size:14px; letter-spacing:0.3em;">timeandprice</span>
+    <span>© 2026</span>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;hourlyRate&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:50,&quot;min&quot;:10,&quot;max&quot;:500,&quot;step&quot;:5,&quot;unit&quot;:&quot;$/hr&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;goldAccent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#7c8798&quot;,&quot;options&quot;:[&quot;#7c8798&quot;,&quot;#8a8177&quot;,&quot;#6f7a8c&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;}}">
+class Component extends DCLogic {
+  state = { count: 0 };
+
+  reveal(el) {
+    el.style.opacity = 1;
+    el.style.transform = 'translateY(0)';
+    if (el.hasAttribute('data-count')) this.countUp();
+    const bars = el.querySelector('[data-bars]');
+    if (bars) Array.from(bars.children).forEach(c => { c.style.transform = 'scaleX(1)'; });
+  }
+
+  countUp() {
+    if (this._counting) return;
+    this._counting = true;
+    const dur = 1200, t0 = performance.now();
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / dur);
+      this.setState({ count: 1 - Math.pow(1 - p, 3) });
+      if (p < 1) this._raf = requestAnimationFrame(step);
+    };
+    this._raf = requestAnimationFrame(step);
+  }
+
+  componentDidMount() {
+    const els = Array.from(document.querySelectorAll('[data-reveal]'));
+    if (!('IntersectionObserver' in window)) { els.forEach(e => this.reveal(e)); return; }
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach(en => {
+        if (en.isIntersecting) { this.reveal(en.target); this._io.unobserve(en.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    els.forEach(e => this._io.observe(e));
+  }
+  componentWillUnmount() { if (this._io) this._io.disconnect(); if (this._raf) cancelAnimationFrame(this._raf); }
+
+  data() {
+    const gold = this.props.goldAccent ?? '#7c8798';
+    const deep = 'linear-gradient(120deg,#c4cad3 0%,' + gold + ' 55%,#8e7f9c 100%)';
+    const soft = 'linear-gradient(120deg, rgba(196,202,211,0.40), rgba(63,70,83,0.34))';
+    const grey = 'rgba(255,255,255,0.14)';
+    return [
+      { start: '09:00', end: 11.25, s: 9, label: 'deep work — Meridian rebrand', kind: 'deep', fill: deep, billable: true },
+      { start: '11:15', end: 12, s: 11.25, label: 'email & admin', kind: 'admin', fill: soft, billable: true },
+      { start: '12:00', end: 12.75, s: 12, label: 'lunch', kind: 'off', fill: grey, billable: false },
+      { start: '12:45', end: 14.5, s: 12.75, label: 'client call — Northbank', kind: 'meet', fill: soft, billable: true },
+      { start: '14:30', end: 15, s: 14.5, label: 'context switching', kind: 'admin', fill: soft, billable: true },
+      { start: '15:00', end: 17.333, s: 15, label: 'deep work — build & review', kind: 'deep', fill: deep, billable: true },
+      { start: '17:20', end: 18, s: 17.333, label: 'planning tomorrow', kind: 'admin', fill: soft, billable: true }
+    ];
+  }
+
+  fmtDur(h) {
+    const m = Math.round(h * 60);
+    const hh = Math.floor(m / 60), mm = m % 60;
+    return ((hh ? hh + 'h ' : '') + (mm ? String(mm).padStart(2, '0') + 'm' : '')).trim() || '0m';
+  }
+  money(v) {
+    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  renderVals() {
+    const rate = this.props.hourlyRate ?? 50;
+    const gold = this.props.goldAccent ?? '#7c8798';
+    const d = this.data();
+    let tracked = 0, billable = 0, deepH = 0;
+    const rows = d.map((b) => {
+      const dur = b.end - b.s;
+      tracked += dur;
+      if (b.billable) billable += dur;
+      if (b.kind === 'deep') deepH += dur;
+      return {
+        start: b.start,
+        dur: this.fmtDur(dur),
+        label: b.label,
+        fill: b.fill,
+        price: b.billable ? this.money(rate * dur) : '—',
+        priceColor: b.billable ? '#c4cad3' : '#6a6771'
+      };
+    });
+    const blocks = d.map((b, i) => ({
+      left: (b.s / 24 * 100).toFixed(2) + '%',
+      width: ((b.end - b.s) / 24 * 100).toFixed(2) + '%',
+      fill: b.fill,
+      delay: (i * 80) + 'ms',
+      label: b.label
+    }));
+    return {
+      rows, blocks,
+      legend: [
+        { name: 'deep work', fill: 'linear-gradient(120deg,#c4cad3,' + gold + ' 55%,#8e7f9c)' },
+        { name: 'meetings & admin', fill: 'linear-gradient(120deg, rgba(196,202,211,0.40), rgba(63,70,83,0.34))' },
+        { name: 'unbilled', fill: 'rgba(255,255,255,0.14)' }
+      ],
+      rateLabel: '$' + rate,
+      totalPrice: this.money(rate * billable * this.state.count),
+      trackedLabel: this.fmtDur(tracked),
+      billableLabel: this.fmtDur(billable),
+      deepLabel: this.fmtDur(deepH),
+      weekLabel: this.money(rate * billable * 4.6 * this.state.count)
+    };
+  }
+}
+
+</script>
+</body>
+</html>

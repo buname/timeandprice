@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./config.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+  html, body { margin:0; padding:0; background:#101011; }
+  body { font-family:"DM Sans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; -webkit-font-smoothing:antialiased; color:#dcd9df; }
+  a { color:#7c8798; text-decoration:none; }
+  a:hover { color:#c4cad3; }
+  input, select, button { font-family:inherit; }
+  input::placeholder { color:#6a6771; }
+  ::selection { background:rgba(124,135,152,0.20); }
+  body::before {
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.32;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.2'/%3E%3C/svg%3E");
+  }
+  @keyframes tp-fade-up { 0% { opacity:0; transform:translateY(16px); } 100% { opacity:1; transform:translateY(0); } }
+  @keyframes tp-shimmer { 0% { transform:translateX(-140%); } 55%,100% { transform:translateX(340%); } }
+  @keyframes tp-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(196,170,120,0); } 50% { box-shadow:0 0 0 10px rgba(196,170,120,0.12); } }
+  @keyframes tp-tick { 0%,100% { opacity:0.35; } 50% { opacity:1; } }
+  @keyframes tp-heat-in { 0% { opacity:0; } 100% { opacity:1; } }
+
+  .tp-topbar { position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 32px; background:transparent; }
+  .tp-topbar.is-scrolled { background:#101011; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .tp-main { position:relative; z-index:1; max-width:1120px; margin:0 auto; padding:56px 32px 120px; }
+  .tp-today-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:24px; margin-top:40px; align-items:start; }
+  .tp-elapsed { margin-top:22px; font-size:68px; font-weight:200; line-height:1; color:#dcd9df; font-variant-numeric:tabular-nums; }
+  .tp-user { font-size:12px; font-weight:300; letter-spacing:0.06em; color:#7c7982; }
+
+  .tp-heatmap { --heat-left:32px; --heat-gap:2px; margin-top:12px; width:100%; }
+  .tp-heat-x { display:flex; align-items:flex-start; height:22px; font-size:11px; font-weight:300; color:#7c7982; }
+  .tp-heat-x-spacer { width:var(--heat-left); flex:none; }
+  .tp-heat-x-ticks { position:relative; flex:1; height:100%; }
+  .tp-heat-x-ticks span { position:absolute; top:0; white-space:nowrap; }
+  .tp-heat-body { display:flex; align-items:stretch; width:100%; height:112px; }
+  .tp-heat-y { width:var(--heat-left); flex:none; display:grid; grid-template-rows:repeat(7, 1fr); row-gap:var(--heat-gap); font-size:11px; font-weight:300; color:#7c7982; }
+  .tp-heat-y span { display:flex; align-items:center; line-height:1; }
+  .tp-heat-grid { flex:1; min-width:0; display:grid; grid-template-rows:repeat(7, 1fr); grid-auto-flow:column; grid-auto-columns:1fr; gap:var(--heat-gap); }
+  .tp-heat-cell { position:relative; border-radius:2px; min-width:0; min-height:0; animation:tp-heat-in 1600ms cubic-bezier(0.85, 0, 0.916, 0.282) backwards; transition:opacity 220ms cubic-bezier(0.4, 0, 0.2, 1); }
+  .tp-heat-cell.is-ghost { pointer-events:none; opacity:0.22; }
+  .tp-heat-grid:hover .tp-heat-cell:not(:hover):not(.is-ghost) { opacity:0.3; }
+  .tp-heat-tip { position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%) translateY(4px) scale(0.96); opacity:0; pointer-events:none; min-width:132px; padding:8px 10px; border-radius:8px; background:#141416; border:1px solid rgba(255,255,255,0.10); box-shadow:0 12px 32px rgba(0,0,0,0.45); z-index:8; transition:opacity 120ms ease, transform 120ms ease; }
+  .tp-heat-cell:hover { z-index:9; }
+  .tp-heat-cell:hover .tp-heat-tip { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+  .tp-heat-tip-k { font-size:10px; font-weight:300; letter-spacing:0.08em; color:#7c7982; }
+  .tp-heat-tip-d { margin-top:3px; font-size:12px; font-weight:400; color:#dcd9df; }
+  .tp-heat-tip-v { margin-top:4px; font-size:11px; font-weight:300; color:#a19ea7; }
+  .tp-heat-legend { display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:12px; font-size:11px; font-weight:300; color:#7c7982; }
+  .tp-heat-swatch { display:block; width:11px; height:11px; border-radius:2px; }
+
+  .tp-rhythm { margin-top:18px; }
+  .tp-rhythm-x { display:flex; align-items:flex-end; height:20px; margin-bottom:4px; }
+  .tp-rhythm-lab { width:36px; flex:none; font-size:11px; font-weight:300; color:#7c7982; line-height:1; }
+  .tp-rhythm-ticks { flex:1; display:flex; justify-content:space-between; font-size:10px; font-weight:300; letter-spacing:0.16em; color:#6a6771; }
+  .tp-rhythm-row { display:flex; align-items:center; gap:12px; margin-top:7px; }
+  .tp-rhythm-track { position:relative; flex:1; height:14px; border-radius:4px; background:rgba(255,255,255,0.045); overflow:visible; }
+  .tp-rhythm-track::before { content:''; position:absolute; inset:0; border-radius:4px; pointer-events:none; background:repeating-linear-gradient(90deg, transparent 0, transparent calc(25% - 1px), rgba(255,255,255,0.05) calc(25% - 1px), rgba(255,255,255,0.05) 25%); }
+  .tp-rhythm-seg { position:absolute; top:0; bottom:0; border-radius:3px; z-index:1; transition:opacity 180ms cubic-bezier(0.4, 0, 0.2, 1); }
+  .tp-rhythm-track:hover .tp-rhythm-seg:not(:hover) { opacity:0.28; }
+  .tp-rhythm-seg:hover { z-index:9; }
+  .tp-rhythm-legend { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-top:16px; font-size:11px; font-weight:300; color:#7c7982; }
+
+  @media (max-width: 800px) {
+    .tp-topbar { padding:14px 16px; gap:12px; flex-wrap:wrap; }
+    .tp-user { display:none; }
+    .tp-main { padding:28px 16px 80px; }
+    .tp-today-grid { grid-template-columns:1fr; gap:16px; margin-top:28px; }
+    .tp-elapsed { font-size:44px; margin-top:14px; }
+    .tp-heatmap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .tp-heat-body { min-width:680px; height:91px; }
+    .tp-heat-x { min-width:680px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tp-heat-cell { animation:none; }
+    .tp-heat-tip { transition:none; }
+    .tp-rhythm-seg { transition:none; }
+  }
+</style>
+</helmet>
+
+<div style="background:#101011; color:#dcd9df; min-height:100vh;">
+
+  <div class="tp-topbar {{ topbarCls }}">
+    <div style="display:flex; align-items:center; gap:28px;">
+      <a href="Timeandprice Landing.dc.html" style="font-size:22px; font-weight:300; color:#dcd9df;">φ</a>
+      <nav style="display:flex; gap:6px;">
+        <button type="button" onClick="{{ goToday }}" style="padding:8px 16px; border:none; border-radius:999px; background:{{ tabTodayBg }}; color:{{ tabTodayFg }}; font-size:12px; font-weight:300; letter-spacing:0.14em; cursor:pointer; transition:background 320ms cubic-bezier(0.22,1,0.36,1), color 320ms;">today</button>
+        <button type="button" onClick="{{ goCats }}" style="padding:8px 16px; border:none; border-radius:999px; background:{{ tabCatsBg }}; color:{{ tabCatsFg }}; font-size:12px; font-weight:300; letter-spacing:0.14em; cursor:pointer; transition:background 320ms cubic-bezier(0.22,1,0.36,1), color 320ms;">categories</button>
+        <button type="button" onClick="{{ goReport }}" style="padding:8px 16px; border:none; border-radius:999px; background:{{ tabReportBg }}; color:{{ tabReportFg }}; font-size:12px; font-weight:300; letter-spacing:0.14em; cursor:pointer; transition:background 320ms cubic-bezier(0.22,1,0.36,1), color 320ms;">month</button>
+      </nav>
+    </div>
+    <div style="display:flex; align-items:center; gap:18px;">
+      <span class="tp-user">{{ userLabel }}</span>
+      <button type="button" onClick="{{ onAuthAction }}" style="padding:9px 20px; border:1px solid rgba(124,135,152,0.45); border-radius:999px; background:none; color:#c4cad3; font-size:12px; font-weight:300; letter-spacing:0.1em; cursor:pointer; transition:background 340ms cubic-bezier(0.22,1,0.36,1), color 340ms;" style-hover="background:rgba(124,135,152,0.12); color:#dcd9df;">{{ authActionLabel }}</button>
+    </div>
+  </div>
+
+  <div class="tp-main">
+
+      <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:tp-fade-up 520ms cubic-bezier(0.22,1,0.36,1) both;">
+          <span style="font-size:10px; font-weight:400; letter-spacing:0.34em; color:#7c8798;">{{ dayLabel }}</span>
+          <h1 style="margin:18px 0 0; font-size:clamp(28px,3.6vw,42px); font-weight:200; color:#dcd9df;">Where the day is going.</h1>
+
+          <div class="tp-today-grid">
+            <div style="padding:30px 30px 26px; border:1px solid {{ timerBorder }}; border-radius:20px; background:rgba(255,255,255,0.045); animation:{{ timerPulse }};">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="display:flex; align-items:center; gap:10px; font-size:10px; font-weight:400; letter-spacing:0.28em; color:#7c8798;"><span style="width:6px; height:6px; border-radius:999px; background:{{ tickColor }}; animation:{{ tickAnim }};"></span>{{ timerState }}</span>
+                <span style="font-size:10px; font-weight:300; letter-spacing:0.18em; color:#7c7982;">{{ modeLabel }}</span>
+              </div>
+              <div class="tp-elapsed">{{ elapsedLabel }}</div>
+              <div style="margin-top:10px; font-size:13px; font-weight:300; color:#a19ea7;">{{ activeCatLabel }}</div>
+
+              <div style="margin-top:24px; display:flex; flex-wrap:wrap; gap:8px;">
+                <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="5">
+                  <button type="button" onClick="{{ c.pick }}" style="display:flex; align-items:center; gap:8px; padding:8px 14px; border:1px solid {{ c.border }}; border-radius:999px; background:{{ c.bg }}; color:{{ c.fg }}; font-size:12px; font-weight:300; letter-spacing:0.04em; cursor:pointer; transition:background 300ms cubic-bezier(0.22,1,0.36,1), border-color 300ms, color 300ms;">
+                    <span style="width:7px; height:7px; border-radius:999px; background:{{ c.dot }};"></span>{{ c.name }}
+                  </button>
+                </sc-for>
+                <button type="button" onClick="{{ openNewCat }}" style="display:flex; align-items:center; gap:7px; padding:8px 14px; border:1px dashed rgba(255,255,255,0.18); border-radius:999px; background:none; color:#7c7982; font-size:12px; font-weight:300; letter-spacing:0.04em; cursor:pointer; transition:border-color 300ms cubic-bezier(0.22,1,0.36,1), color 300ms;" style-hover="border-color:rgba(124,135,152,0.6); color:#dcd9df;">{{ newCatToggleLabel }}</button>
+              </div>
+
+              <sc-if value="{{ newCatOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px; padding:16px 18px; border:1px solid rgba(255,255,255,0.10); border-radius:16px; background:rgba(255,255,255,0.03); display:flex; align-items:center; gap:12px; flex-wrap:wrap; animation:tp-fade-up 380ms cubic-bezier(0.22,1,0.36,1) both;">
+                  <input value="{{ newCatName }}" onChange="{{ onNewCatName }}" placeholder="new category" style="width:150px; padding:10px 16px; border:1px solid rgba(255,255,255,0.14); border-radius:999px; background:rgba(255,255,255,0.03); color:#dcd9df; font-size:12px; font-weight:300; outline:none;" style-focus="border-color:rgba(124,135,152,0.6);">
+                  <div style="display:flex; gap:7px;">
+                    <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="6">
+                      <button type="button" onClick="{{ s.pick }}" style="width:20px; height:20px; border:1px solid {{ s.border }}; border-radius:999px; background:{{ s.color }}; cursor:pointer; padding:0; transition:transform 300ms cubic-bezier(0.22,1,0.36,1), border-color 300ms;" style-hover="transform:scale(1.15);"></button>
+                    </sc-for>
+                  </div>
+                  <button type="button" onClick="{{ toggleNewFlag }}" style="padding:8px 16px; border:1px solid {{ newFlagBorder }}; border-radius:999px; background:{{ newFlagBg }}; color:{{ newFlagFg }}; font-size:11px; font-weight:300; letter-spacing:0.1em; cursor:pointer; transition:background 320ms, color 320ms, border-color 320ms;">{{ newFlagLabel }}</button>
+                  <button type="button" onClick="{{ addCatHere }}" style="padding:10px 20px; border:none; border-radius:999px; background:linear-gradient(120deg,#c4cad3 0%,#7c8798 50%,#3f4653 100%); color:#151218; font-size:12px; font-weight:400; letter-spacing:0.1em; cursor:pointer;">add</button>
+                  <button type="button" onClick="{{ goCats }}" style="border:none; background:none; padding:0; color:#7c8798; font-size:11px; font-weight:300; letter-spacing:0.08em; cursor:pointer;">manage all</button>
+                </div>
+              </sc-if>
+
+              <div style="margin-top:22px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:11px; font-weight:300; letter-spacing:0.14em; color:#7c7982;">ALARM AT</span>
+                  <sc-for list="{{ targetChips }}" as="t" hint-placeholder-count="5">
+                    <button type="button" onClick="{{ t.pick }}" style="padding:7px 13px; border:1px solid {{ t.border }}; border-radius:999px; background:{{ t.bg }}; color:{{ t.fg }}; font-size:11px; font-weight:300; letter-spacing:0.08em; cursor:pointer; font-variant-numeric:tabular-nums; transition:background 300ms, border-color 300ms, color 300ms;">{{ t.label }}</button>
+                  </sc-for>
+                </div>
+                <button type="button" onClick="{{ toggleTimer }}" style="padding:14px 34px; border:none; border-radius:999px; background:{{ startBg }}; color:{{ startFg }}; font-size:13px; font-weight:400; letter-spacing:0.1em; cursor:pointer; transition:background 340ms cubic-bezier(0.22,1,0.36,1);">{{ startLabel }}</button>
+              </div>
+              <div style="margin-top:16px; font-size:11px; font-weight:300; line-height:1.6; color:#6a6771;">{{ timerHint }}</div>
+            </div>
+
+            <div style="padding:30px 30px 24px; border:1px solid rgba(255,255,255,0.09); border-radius:20px; background:rgba(255,255,255,0.045);">
+              <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:300; letter-spacing:0.2em; color:#7c7982; margin-bottom:14px;">
+                <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+              </div>
+              <div style="position:relative; height:44px; border-radius:8px; background:rgba(255,255,255,0.06); overflow:hidden;">
+                <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="5">
+                  <div style="position:absolute; top:0; bottom:0; left:{{ b.left }}; width:{{ b.width }}; background:{{ b.fill }}; overflow:hidden;" title="{{ b.title }}">
+                    <span style="position:absolute; top:0; bottom:0; left:0; width:40%; pointer-events:none; background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.16) 50%, rgba(255,255,255,0) 100%); animation:tp-shimmer 9s linear infinite; animation-delay:{{ b.delay }};"></span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ noEntries }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:300; letter-spacing:0.12em; color:#6a6771;">Start the timer to fill your day</div>
+                </sc-if>
+              </div>
+
+              <div style="margin-top:22px; display:flex; flex-direction:column;">
+                <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+                  <div style="display:grid; grid-template-columns:56px 80px minmax(0,1fr) auto auto; align-items:center; gap:14px; padding:14px 4px; border-bottom:1px solid rgba(255,255,255,0.06); transition:background 320ms;" style-hover="background:rgba(124,135,152,0.05);">
+                    <span style="font-size:11px; font-weight:300; letter-spacing:0.09em; color:#7c7982; font-variant-numeric:tabular-nums;">{{ r.start }}</span>
+                    <span style="display:flex; align-items:center; gap:10px; font-size:13px; font-weight:400; color:#dcd9df; font-variant-numeric:tabular-nums;"><span style="width:3px; height:20px; border-radius:2px; background:{{ r.dot }};"></span>{{ r.dur }}</span>
+                    <span style="font-size:13px; font-weight:300; color:#a19ea7;">{{ r.label }}</span>
+                    <span style="font-size:11px; font-weight:300; letter-spacing:0.12em; color:#6a6771; font-variant-numeric:tabular-nums;">{{ r.share }}</span>
+                    <button type="button" onClick="{{ r.remove }}" style="width:24px; height:24px; border:none; border-radius:999px; background:none; color:#5c5960; font-size:14px; line-height:1; cursor:pointer; transition:color 300ms, background 300ms;" style-hover="color:#c4aa78; background:rgba(196,170,120,0.10);">×</button>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top:20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <input value="{{ addStart }}" onChange="{{ onAddStart }}" placeholder="09:00" style="width:74px; padding:10px 12px; border:1px solid rgba(255,255,255,0.14); border-radius:999px; background:rgba(255,255,255,0.03); color:#dcd9df; font-size:12px; font-weight:300; text-align:center; outline:none; font-variant-numeric:tabular-nums;" style-focus="border-color:rgba(124,135,152,0.6);">
+                <input value="{{ addMin }}" onChange="{{ onAddMin }}" placeholder="45" style="width:60px; padding:10px 12px; border:1px solid rgba(255,255,255,0.14); border-radius:999px; background:rgba(255,255,255,0.03); color:#dcd9df; font-size:12px; font-weight:300; text-align:center; outline:none; font-variant-numeric:tabular-nums;" style-focus="border-color:rgba(124,135,152,0.6);">
+                <span style="font-size:11px; font-weight:300; color:#6a6771;">min</span>
+                <button type="button" onClick="{{ addEntry }}" style="padding:10px 20px; border:1px solid rgba(124,135,152,0.45); border-radius:999px; background:none; color:#c4cad3; font-size:12px; font-weight:300; letter-spacing:0.08em; cursor:pointer; transition:background 320ms, color 320ms;" style-hover="background:rgba(124,135,152,0.12); color:#dcd9df;">add block manually</button>
+                <span style="font-size:11px; font-weight:300; color:#6a6771;">{{ trackedFoot }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:20px; margin-top:24px;">
+            <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+              <div style="padding:24px 26px; border:1px solid rgba(255,255,255,0.09); border-radius:18px; background:rgba(255,255,255,0.035);">
+                <div style="font-size:10px; font-weight:400; letter-spacing:0.28em; color:#7c8798;">{{ s.label }}</div>
+                <div style="margin-top:16px; font-size:30px; font-weight:200; color:#dcd9df; font-variant-numeric:tabular-nums; line-height:1;">{{ s.value }}</div>
+                <div style="margin-top:8px; font-size:12px; font-weight:300; color:{{ s.noteColor }};">{{ s.note }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isCats }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:tp-fade-up 520ms cubic-bezier(0.22,1,0.36,1) both;">
+          <span style="font-size:10px; font-weight:400; letter-spacing:0.34em; color:#7c8798;">CATEGORIES</span>
+          <h1 style="margin:18px 0 0; font-size:clamp(28px,3.6vw,42px); font-weight:200; color:#dcd9df;">Your own buckets.</h1>
+          <p style="margin:16px 0 0; max-width:440px; font-size:14px; font-weight:300; line-height:1.7; color:#a19ea7;">Mark a category productive and it counts toward your score. Distracting ones surface in the leak card.</p>
+
+          <div style="margin-top:40px; border:1px solid rgba(255,255,255,0.09); border-radius:20px; background:rgba(255,255,255,0.045); padding:12px 0;">
+            <sc-for list="{{ catRows }}" as="c" hint-placeholder-count="5">
+              <div style="display:grid; grid-template-columns:auto minmax(0,1fr) auto auto auto; align-items:center; gap:18px; padding:18px 28px; border-bottom:1px solid rgba(255,255,255,0.06);">
+                <span style="width:10px; height:10px; border-radius:999px; background:{{ c.dot }};"></span>
+                <span style="font-size:14px; font-weight:300; color:#dcd9df;">{{ c.name }}</span>
+                <span style="font-size:11px; font-weight:300; letter-spacing:0.1em; color:#6a6771; font-variant-numeric:tabular-nums;">{{ c.weekLabel }}</span>
+                <button type="button" onClick="{{ c.toggle }}" style="padding:7px 16px; border:1px solid {{ c.flagBorder }}; border-radius:999px; background:{{ c.flagBg }}; color:{{ c.flagFg }}; font-size:11px; font-weight:300; letter-spacing:0.1em; cursor:pointer; transition:background 320ms, color 320ms, border-color 320ms;">{{ c.flagLabel }}</button>
+                <button type="button" onClick="{{ c.remove }}" style="width:26px; height:26px; border:none; border-radius:999px; background:none; color:#5c5960; font-size:15px; line-height:1; cursor:pointer; transition:color 300ms, background 300ms;" style-hover="color:#c4aa78; background:rgba(196,170,120,0.10);">×</button>
+              </div>
+            </sc-for>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:22px 28px 14px;">
+              <input value="{{ newCatName }}" onChange="{{ onNewCatName }}" placeholder="new category" style="width:200px; padding:11px 18px; border:1px solid rgba(255,255,255,0.14); border-radius:999px; background:rgba(255,255,255,0.03); color:#dcd9df; font-size:13px; font-weight:300; outline:none;" style-focus="border-color:rgba(124,135,152,0.6);">
+              <div style="display:flex; gap:8px;">
+                <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ s.pick }}" style="width:22px; height:22px; border:1px solid {{ s.border }}; border-radius:999px; background:{{ s.color }}; cursor:pointer; padding:0; transition:transform 300ms cubic-bezier(0.22,1,0.36,1), border-color 300ms;" style-hover="transform:scale(1.15);"></button>
+                </sc-for>
+              </div>
+              <button type="button" onClick="{{ toggleNewFlag }}" style="padding:9px 18px; border:1px solid {{ newFlagBorder }}; border-radius:999px; background:{{ newFlagBg }}; color:{{ newFlagFg }}; font-size:11px; font-weight:300; letter-spacing:0.1em; cursor:pointer; transition:background 320ms, color 320ms, border-color 320ms;">{{ newFlagLabel }}</button>
+              <button type="button" onClick="{{ addCat }}" style="padding:11px 24px; border:none; border-radius:999px; background:linear-gradient(120deg,#c4cad3 0%,#7c8798 50%,#3f4653 100%); color:#151218; font-size:12px; font-weight:400; letter-spacing:0.1em; cursor:pointer;">add</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isReport }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:tp-fade-up 520ms cubic-bezier(0.22,1,0.36,1) both;">
+          <span style="font-size:10px; font-weight:400; letter-spacing:0.34em; color:#7c8798;">{{ monthLabel }}</span>
+          <h1 style="margin:18px 0 0; font-size:clamp(28px,3.6vw,42px); font-weight:200; color:#dcd9df;">The month in hours.</h1>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:20px; margin-top:40px;">
+            <sc-for list="{{ monthStats }}" as="s" hint-placeholder-count="4">
+              <div style="padding:26px 28px; border:1px solid rgba(255,255,255,0.09); border-radius:18px; background:rgba(255,255,255,0.035);">
+                <div style="font-size:10px; font-weight:400; letter-spacing:0.28em; color:#7c8798;">{{ s.label }}</div>
+                <div style="margin-top:16px; font-size:32px; font-weight:200; color:#dcd9df; font-variant-numeric:tabular-nums; line-height:1;">{{ s.value }}</div>
+                <div style="margin-top:8px; font-size:12px; font-weight:300; color:#7c7982;">{{ s.note }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="margin-top:24px; padding:30px; border:1px solid rgba(255,255,255,0.09); border-radius:20px; background:rgba(255,255,255,0.045);">
+            <div style="font-size:10px; font-weight:400; letter-spacing:0.28em; color:#7c8798;">DAILY INTENSITY</div>
+            <div class="tp-heatmap">
+              <div class="tp-heat-x">
+                <span class="tp-heat-x-spacer"></span>
+                <div class="tp-heat-x-ticks">
+                  <sc-for list="{{ heatMonths }}" as="m" hint-placeholder-count="12">
+                    <span style="left:{{ m.left }};">{{ m.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+              <div class="tp-heat-body">
+                <div class="tp-heat-y">
+                  <sc-for list="{{ heatDays }}" as="d" hint-placeholder-count="7">
+                    <span style="opacity:{{ d.opacity }};">{{ d.label }}</span>
+                  </sc-for>
+                </div>
+                <div class="tp-heat-grid">
+                  <sc-for list="{{ heat }}" as="h" hint-placeholder-count="371">
+                    <div class="{{ h.cls }}" style="background:{{ h.fill }}; animation-delay:{{ h.delay }};">
+                      <div class="tp-heat-tip">
+                        <div class="tp-heat-tip-k">{{ h.weekday }}</div>
+                        <div class="tp-heat-tip-d">{{ h.dateLabel }}</div>
+                        <div class="tp-heat-tip-v">{{ h.valueLabel }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div class="tp-heat-legend">
+                <span>Less</span>
+                <sc-for list="{{ heatLegend }}" as="l" hint-placeholder-count="5">
+                  <span class="tp-heat-swatch" style="background:{{ l.fill }};"></span>
+                </sc-for>
+                <span>More</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:24px; padding:30px; border:1px solid rgba(255,255,255,0.09); border-radius:20px; background:rgba(255,255,255,0.045);">
+            <div style="font-size:10px; font-weight:400; letter-spacing:0.28em; color:#7c8798;">WEEKDAY RHYTHM</div>
+            <div style="margin-top:12px; font-size:14px; font-weight:300; line-height:1.6; color:#a19ea7;">{{ rhythmInsight }}</div>
+            <div class="tp-rhythm">
+              <div class="tp-rhythm-x">
+                <span class="tp-rhythm-lab"></span>
+                <div class="tp-rhythm-ticks">
+                  <sc-for list="{{ rhythmTicks }}" as="t" hint-placeholder-count="5">
+                    <span>{{ t }}</span>
+                  </sc-for>
+                </div>
+              </div>
+              <sc-for list="{{ rhythmRows }}" as="r" hint-placeholder-count="7">
+                <div class="tp-rhythm-row" style="opacity:{{ r.mute }};">
+                  <span class="tp-rhythm-lab">{{ r.label }}</span>
+                  <div class="tp-rhythm-track">
+                    <sc-for list="{{ r.segs }}" as="s" hint-placeholder-count="6">
+                      <div class="tp-rhythm-seg" style="left:{{ s.left }}; width:{{ s.width }}; background:{{ s.fill }};">
+                        <div class="tp-heat-tip">
+                          <div class="tp-heat-tip-k">{{ s.name }}</div>
+                          <div class="tp-heat-tip-d">{{ s.time }}</div>
+                          <div class="tp-heat-tip-v">{{ s.note }}</div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div class="tp-rhythm-legend">
+                <sc-for list="{{ rhythmLegend }}" as="l" hint-placeholder-count="5">
+                  <span><span class="tp-heat-swatch" style="display:inline-block; vertical-align:middle; margin-right:8px; background:{{ l.dot }};"></span>{{ l.name }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+  <sc-if value="{{ authOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(8,8,9,0.72); backdrop-filter:blur(10px); animation:tp-fade-up 380ms cubic-bezier(0.22,1,0.36,1) both;">
+      <div style="width:100%; max-width:380px; padding:38px 34px 30px; border:1px solid rgba(255,255,255,0.10); border-radius:24px; background:#141416; box-shadow:0 30px 90px rgba(0,0,0,0.6);">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-size:22px; font-weight:300; color:#dcd9df;">φ</span>
+          <button type="button" onClick="{{ closeAuth }}" style="width:28px; height:28px; border:none; border-radius:999px; background:none; color:#6a6771; font-size:16px; line-height:1; cursor:pointer; transition:color 300ms;" style-hover="color:#dcd9df;">×</button>
+        </div>
+        <h2 style="margin:26px 0 0; font-size:24px; font-weight:200; color:#dcd9df;">{{ authTitle }}</h2>
+        <p style="margin:12px 0 0; font-size:13px; font-weight:300; line-height:1.7; color:#a19ea7;">{{ authSub }}</p>
+        <button type="button" onClick="{{ googleSignIn }}" style="margin-top:28px; width:100%; display:flex; align-items:center; justify-content:center; gap:12px; padding:14px 18px; border:1px solid rgba(255,255,255,0.14); border-radius:14px; background:rgba(255,255,255,0.04); color:#dcd9df; font-size:13px; font-weight:400; letter-spacing:0.04em; cursor:pointer; transition:background 320ms, border-color 320ms;" style-hover="background:rgba(255,255,255,0.08); border-color:rgba(124,135,152,0.5);">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.348 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+          Continue with Google
+        </button>
+        <p style="margin:16px 0 0; font-size:12px; font-weight:300; line-height:1.6; color:#6a6771;">{{ googleHint }}</p>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<div id="tp-alarm-yt" aria-hidden="true" style="position:fixed;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:0;bottom:0;"></div>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const KEY = 'timeandprice.app.v5';
+const SWATCHES = ['#aeb4c0', '#c4aa78', '#8fbfa4', '#b49ab0', '#8a94a8', '#9d9384'];
+
+const SEED = {
+  user: null,
+  categories: [
+    { name: 'math', productive: true, color: '#aeb4c0' },
+    { name: 'coding', productive: true, color: '#8a94a8' },
+    { name: 'homework', productive: true, color: '#9d9384' },
+    { name: 'free time', productive: false, color: '#c4aa78' },
+    { name: 'pause', productive: false, color: '#6a6771' }
+  ],
+  today: [
+    { start: '09:00', min: 100, cat: 'math' },
+    { start: '10:40', min: 45, cat: 'coding' },
+    { start: '11:25', min: 15, cat: 'pause' },
+    { start: '11:40', min: 50, cat: 'homework' },
+    { start: '12:30', min: 65, cat: 'free time' },
+    { start: '13:35', min: 190, cat: 'math' }
+  ],
+  yesterdayLead: 210,
+  streak: 12,
+  target: 10,
+  month: null
+};
+
+class Component extends DCLogic {
+  state = {
+    data: null, screen: 'today', scrolled: false,
+    auth: null, authEmail: '', authPass: '',
+    running: false, activeCat: 'math', startedAt: 0, elapsed: 0, target: 10, alarmed: false,
+    addStart: '', addMin: '', newCatName: '', newCatColor: '#aeb4c0', newCatFlag: true, newCatOpen: false
+  };
+
+  componentDidMount() {
+    const d = this.load();
+    this.setState({ data: d, target: d.target || 10 });
+    this._onScroll = () => {
+      const on = window.scrollY > 6;
+      if (on !== this.state.scrolled) this.setState({ scrolled: on });
+    };
+    window.addEventListener('scroll', this._onScroll, { passive: true });
+    this._onScroll();
+    this.bootYt();
+    this._t = setInterval(() => {
+      if (!this.state.running) return;
+      const el = Math.floor((Date.now() - this.state.startedAt) / 1000);
+      this.setState({ elapsed: el });
+      const tgt = this.state.target;
+      if (tgt && !this.state.alarmed && el >= tgt) { this.setState({ alarmed: true }); this.alarm(); }
+    }, 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this._t);
+    clearTimeout(this._ytStop);
+    clearTimeout(this._ytPrime);
+    window.removeEventListener('scroll', this._onScroll);
+    try { if (this._yt && this._yt.pauseVideo) this._yt.pauseVideo(); } catch (e) {}
+  }
+
+  load() {
+    try {
+      const raw = window.localStorage.getItem(KEY);
+      if (raw) return Object.assign({}, SEED, JSON.parse(raw));
+      window.localStorage.setItem(KEY, JSON.stringify(SEED));
+    } catch (e) { /* storage unavailable */ }
+    return SEED;
+  }
+  save(next) {
+    this.setState({ data: next });
+    try { window.localStorage.setItem(KEY, JSON.stringify(next)); } catch (e) { /* ignore */ }
+  }
+  patch(part) { this.save(Object.assign({}, this.state.data || SEED, part)); }
+
+  bootYt() {
+    if (window.YT && window.YT.Player) { this.makeYt(); return; }
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof prev === 'function') prev();
+      this.makeYt();
+    };
+    if (!document.getElementById('tp-yt-api')) {
+      const s = document.createElement('script');
+      s.id = 'tp-yt-api';
+      s.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
+    }
+  }
+
+  makeYt() {
+    if (this._yt || !window.YT || !window.YT.Player) return;
+    let host = document.getElementById('tp-alarm-yt');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'tp-alarm-yt';
+      host.setAttribute('aria-hidden', 'true');
+      host.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:0;bottom:0;';
+      document.body.appendChild(host);
+    }
+    this._yt = new window.YT.Player('tp-alarm-yt', {
+      videoId: 'R8WB_-Pfd-I',
+      width: 1,
+      height: 1,
+      playerVars: {
+        autoplay: 0, controls: 0, disablekb: 1, fs: 0,
+        modestbranding: 1, playsinline: 1, rel: 0
+      },
+      events: {
+        onReady: () => { this._ytReady = true; }
+      }
+    });
+  }
+
+  unlockAudio() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) {
+        if (!this._audio) this._audio = new Ctx();
+        if (this._audio.state === 'suspended') this._audio.resume();
+      }
+    } catch (e) { /* audio blocked */ }
+    try {
+      if (this._yt && this._ytReady) {
+        this._yt.mute();
+        this._yt.playVideo();
+        clearTimeout(this._ytPrime);
+        this._ytPrime = setTimeout(() => {
+          try {
+            this._yt.pauseVideo();
+            this._yt.unMute();
+            this._yt.seekTo(0, true);
+          } catch (err) { /* ignore */ }
+        }, 280);
+      }
+    } catch (e) { /* youtube blocked */ }
+  }
+
+  beep() {
+    try {
+      const ctx = this._audio;
+      if (!ctx) return;
+      [0, 0.28, 0.56].forEach((t, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = i === 2 ? 784 : 588;
+        g.gain.setValueAtTime(0, ctx.currentTime + t);
+        g.gain.linearRampToValueAtTime(0.32, ctx.currentTime + t + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.24);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.26);
+      });
+    } catch (e) { /* audio blocked */ }
+  }
+
+  alarm() {
+    let played = false;
+    try {
+      if (this._yt && this._ytReady && this._yt.playVideo) {
+        this._yt.unMute();
+        this._yt.setVolume(32);
+        this._yt.seekTo(0, true);
+        this._yt.playVideo();
+        played = true;
+        clearTimeout(this._ytStop);
+        this._ytStop = setTimeout(() => { try { this._yt.pauseVideo(); } catch (e) {} }, 7000);
+      }
+    } catch (e) { /* youtube blocked */ }
+    if (!played) this.beep();
+    try { if (navigator.vibrate) navigator.vibrate([140, 70, 140, 70, 200]); } catch (e) {}
+  }
+
+  stopAlarm() {
+    clearTimeout(this._ytStop);
+    try {
+      if (this._yt && this._yt.pauseVideo) {
+        this._yt.pauseVideo();
+        this._yt.seekTo(0, true);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  cat(name) {
+    const cs = (this.state.data || SEED).categories;
+    return cs.find(c => c.name === name) || { name: name, productive: false, color: '#6a6771' };
+  }
+  fillOf(name) {
+    const c = this.cat(name);
+    return c.productive ? 'linear-gradient(120deg,' + c.color + ' 0%, rgba(63,70,83,0.9) 100%)' : c.color;
+  }
+  dur(min) {
+    const h = Math.floor(min / 60), m = Math.round(min % 60);
+    if (min <= 0) return '0m';
+    return ((h ? h + 'h ' : '') + (m ? String(m).padStart(2, '0') + 'm' : '')).trim();
+  }
+  toMin(hhmm) { const a = String(hhmm).split(':'); return (+a[0] || 0) * 60 + (+a[1] || 0); }
+  fromMin(m) {
+    const h = Math.floor(m / 60) % 24, mm = Math.round(m % 60);
+    return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  }
+  clock(sec) {
+    const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+  targetPhrase(sec) {
+    if (!sec) return '';
+    if (sec < 60) return sec + ' seconds';
+    return Math.round(sec / 60) + ' minutes';
+  }
+
+  monthData() {
+    const d = this.state.data || SEED;
+    if (d.month) return d.month;
+    const cats = d.categories.map(c => c.name);
+    let seed = 11;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const days = [];
+    const year = 2026, month = 7, last = new Date(year, month + 1, 0).getDate();
+    for (let day = 1; day <= last; day++) {
+      const date = new Date(year, month, day);
+      const weekend = date.getDay() === 0 || date.getDay() === 6;
+      const total = Math.round(weekend ? 90 + rnd() * 160 : 330 + rnd() * 200);
+      const mins = {};
+      let left = total;
+      cats.forEach((c, j) => {
+        const share = j === 0 ? 0.55 : (j === cats.length - 1 ? 1 : 0.18 + rnd() * 0.12);
+        const v = j === cats.length - 1 ? left : Math.round(total * share * (0.7 + rnd() * 0.6));
+        const val = Math.max(0, Math.min(left, v));
+        mins[c] = val; left -= val;
+      });
+      days.push({ date: date, total: total, mins: mins });
+    }
+    return days;
+  }
+
+  heatLevel(total, max) {
+    if (total <= 0) return 0;
+    const t = total / max;
+    if (t > 0.75) return 4;
+    if (t > 0.5) return 3;
+    if (t > 0.25) return 2;
+    return 1;
+  }
+
+  heatChart(month) {
+    const LEVELS = ['#1c1c1e', '#3a3a3e', '#6a6a70', '#a8a8ae', '#f2f2f4'];
+    const byKey = {};
+    month.forEach((x, i) => {
+      const date = x.date instanceof Date ? x.date : new Date(2026, 7, i + 1);
+      byKey[date.toDateString()] = x.total;
+    });
+    let seed = 29;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const rangeStart = new Date(2025, 8, 1);
+    const rangeEnd = new Date(2026, 7, 31);
+    const start = new Date(rangeStart);
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    const end = new Date(rangeEnd);
+    end.setDate(end.getDate() + (6 - ((end.getDay() + 6) % 7)));
+    const totals = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const inRange = cursor >= rangeStart && cursor <= rangeEnd;
+      const key = cursor.toDateString();
+      let total = 0;
+      if (inRange) {
+        if (byKey[key] != null) total = byKey[key];
+        else {
+          const weekend = cursor.getDay() === 0 || cursor.getDay() === 6;
+          total = Math.round(weekend ? 80 + rnd() * 150 : 300 + rnd() * 220);
+        }
+      }
+      totals.push({ date: new Date(cursor), inRange: inRange, total: total });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    const max = totals.reduce((m, x) => Math.max(m, x.total), 0) || 1;
+    const weekCount = Math.round(totals.length / 7);
+    const heat = [];
+    const heatMonths = [];
+    const seenMonth = {};
+    totals.forEach((x, i) => {
+      const col = Math.floor(i / 7), row = i % 7;
+      const level = x.inRange ? this.heatLevel(x.total, max) : 0;
+      const mk = x.date.getMonth() + '-' + x.date.getFullYear();
+      if (x.inRange && !seenMonth[mk]) {
+        seenMonth[mk] = true;
+        heatMonths.push({
+          label: x.date.toLocaleDateString('en-US', { month: 'short' }),
+          left: (weekCount ? (col / weekCount * 100) : 0).toFixed(2) + '%'
+        });
+      }
+      heat.push({
+        cls: x.inRange ? 'tp-heat-cell' : 'tp-heat-cell is-ghost',
+        fill: LEVELS[level],
+        delay: Math.min(1400, (col * 7 + row) * 3) + 'ms',
+        weekday: x.date.toLocaleDateString('en-US', { weekday: 'long' }),
+        dateLabel: x.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        valueLabel: !x.inRange ? 'Out of range' : (x.total ? this.dur(x.total) + ' tracked' : 'No activity')
+      });
+    });
+    return {
+      heat: heat,
+      heatMonths: heatMonths,
+      heatDays: [
+        { label: 'Mon', opacity: '1' },
+        { label: '', opacity: '0' },
+        { label: 'Wed', opacity: '1' },
+        { label: '', opacity: '0' },
+        { label: 'Fri', opacity: '1' },
+        { label: '', opacity: '0' },
+        { label: '', opacity: '0' }
+      ],
+      heatLegend: LEVELS.map(fill => ({ fill: fill }))
+    };
+  }
+
+  rhythmChart(month) {
+    const DAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const cats = (this.state.data || SEED).categories || [];
+    const prod = cats.filter(c => c.productive).map(c => c.name);
+    const leak = cats.filter(c => !c.productive).map(c => c.name);
+    const lead = prod[0] || 'math';
+    const meet = prod[1] || 'coding';
+    const admin = prod[2] || 'homework';
+    const social = leak[0] || 'free time';
+    const rest = leak[1] || 'pause';
+    const known = prod.concat(leak);
+    const buckets = DAY.map(() => ({ n: 0, mins: {} }));
+    month.forEach((x, i) => {
+      const date = x.date instanceof Date ? x.date : new Date(x.date || Date.UTC(2026, 7, i + 1));
+      const wd = (date.getDay() + 6) % 7;
+      buckets[wd].n++;
+      Object.keys(x.mins || {}).forEach(k => {
+        buckets[wd].mins[k] = (buckets[wd].mins[k] || 0) + x.mins[k];
+      });
+    });
+
+    const used = {};
+    const rows = buckets.map((b, i) => {
+      const avg = {};
+      Object.keys(b.mins).forEach(k => { avg[k] = b.n ? b.mins[k] / b.n : 0; });
+      const weekend = i >= 5;
+      const focus = avg[lead] || 0;
+      let cursor = weekend ? 11 * 60 : (focus > 240 ? 8 * 60 + 30 : 9 * 60);
+      const segs = [];
+      const push = (cat, min) => {
+        if (!cat || min < 10 || cursor >= 22 * 60) return;
+        const dur = Math.min(Math.round(min), 22 * 60 - cursor);
+        if (dur < 10) return;
+        const start = cursor;
+        cursor += dur;
+        used[cat] = true;
+        segs.push({
+          left: (start / 1440 * 100).toFixed(2) + '%',
+          width: (dur / 1440 * 100).toFixed(2) + '%',
+          fill: this.fillOf(cat),
+          name: cat,
+          time: this.fromMin(start) + '–' + this.fromMin(start + dur),
+          note: 'typical ' + DAY[i].toLowerCase(),
+          startMin: start,
+          dur: dur
+        });
+      };
+
+      const morning = focus * (weekend ? 0.35 : 0.58);
+      push(lead, morning);
+      push(meet, avg[meet] || 0);
+      push(admin, avg[admin] || 0);
+      push(lead, focus - morning);
+      Object.keys(avg).forEach(k => {
+        if (known.indexOf(k) < 0) push(k, avg[k]);
+      });
+      push(social, avg[social] || 0);
+      push(rest, avg[rest] || 0);
+
+      return {
+        label: DAY[i],
+        mute: weekend ? '0.7' : '1',
+        segs: segs
+      };
+    });
+
+    const meetMins = rows.slice(0, 5).map((r, i) => ({
+      i: i,
+      m: r.segs.filter(s => s.name === meet).reduce((s, x) => s + x.dur, 0)
+    }));
+    const meetMax = meetMins.reduce((m, x) => Math.max(m, x.m), 0);
+    const meetHeavy = meetMins.filter(x => x.m >= meetMax * 0.72 && x.m > 30).map(x => DAY[x.i].toLowerCase());
+    const focusSeg = rows[0] && rows[0].segs.find(s => s.name === lead);
+    const focusBit = focusSeg
+      ? lead + ' holds ' + String(Math.round(focusSeg.startMin / 60)).padStart(2, '0') + '–' + String(Math.round((focusSeg.startMin + focusSeg.dur) / 60)).padStart(2, '0') + ' on weekdays'
+      : 'weekdays stay light';
+    const meetBit = meetHeavy.length
+      ? meet + ' cluster ' + (meetHeavy.length > 1 ? meetHeavy[0] + '–' + meetHeavy[meetHeavy.length - 1] : meetHeavy[0])
+      : meet + ' stay thin';
+
+    const legend = cats.filter(c => used[c.name]).map(c => ({ name: c.name, dot: c.color }));
+
+    return {
+      rhythmRows: rows,
+      rhythmTicks: ['00', '06', '12', '18', '24'],
+      rhythmLegend: legend,
+      rhythmInsight: focusBit + '. ' + meetBit + '.'
+    };
+  }
+
+  renderVals() {
+    const d = this.state.data || SEED;
+    const st = this.state;
+    const entries = d.today || [];
+    const tracked = entries.reduce((s, e) => s + e.min, 0);
+    const byCat = {};
+    entries.forEach(e => { byCat[e.cat] = (byCat[e.cat] || 0) + e.min; });
+    const productive = Object.keys(byCat).filter(k => this.cat(k).productive).reduce((s, k) => s + byCat[k], 0);
+    const score = tracked ? Math.round(productive / tracked * 100) : 0;
+    const lead = ((d.categories || []).find(c => c.productive) || { name: 'math' }).name;
+    const leadDelta = (byCat[lead] || 0) - (d.yesterdayLead || 0);
+    const distract = Object.keys(byCat).filter(k => !this.cat(k).productive).sort((a, b) => byCat[b] - byCat[a]);
+
+    const tabBg = on => on ? 'rgba(124,135,152,0.16)' : 'transparent';
+    const tabFg = on => on ? '#dcd9df' : '#7c7982';
+
+    const month = this.monthData();
+    const monthTotal = month.reduce((s, x) => s + x.total, 0);
+    const monthMax = month.reduce((m, x) => Math.max(m, x.total), 0) || 1;
+    const monthBy = {};
+    month.forEach(x => Object.keys(x.mins).forEach(k => { monthBy[k] = (monthBy[k] || 0) + x.mins[k]; }));
+    const monthKeys = Object.keys(monthBy).filter(k => monthBy[k] > 0).sort((a, b) => monthBy[b] - monthBy[a]);
+    const monthProd = monthKeys.filter(k => this.cat(k).productive).reduce((s, k) => s + monthBy[k], 0);
+    const activeDays = month.filter(x => x.total > 0).length;
+
+    return {
+      isToday: st.screen === 'today', isCats: st.screen === 'cats', isReport: st.screen === 'report',
+      goToday: () => this.setState({ screen: 'today' }),
+      goCats: () => this.setState({ screen: 'cats' }),
+      goReport: () => this.setState({ screen: 'report' }),
+      tabTodayBg: tabBg(st.screen === 'today'), tabTodayFg: tabFg(st.screen === 'today'),
+      tabCatsBg: tabBg(st.screen === 'cats'), tabCatsFg: tabFg(st.screen === 'cats'),
+      tabReportBg: tabBg(st.screen === 'report'), tabReportFg: tabFg(st.screen === 'report'),
+      topbarCls: st.scrolled ? 'is-scrolled' : '',
+
+      userLabel: d.user ? (d.user.name || d.user.email) : 'not signed in',
+      authActionLabel: d.user ? 'log out' : 'log in',
+      onAuthAction: () => {
+        if (d.user) {
+          try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
+          this.patch({ user: null });
+        } else {
+          this.setState({ auth: 'login' });
+        }
+      },
+      authOpen: st.auth !== null,
+      authTitle: 'Welcome back.',
+      authSub: 'Sign in with Google. Your hours stay on this device.',
+      googleHint: (window.TP_CONFIG && window.TP_CONFIG.googleClientId)
+        ? 'We’ll add the Vercel origin when we ship.'
+        : 'Add your Google Client ID in config.js, then refresh.',
+      googleSignIn: () => {
+        const id = window.TP_CONFIG && window.TP_CONFIG.googleClientId;
+        if (!id) return;
+        if (!window.google || !google.accounts || !google.accounts.oauth2) return;
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: id,
+          scope: 'openid email profile',
+          callback: (resp) => {
+            if (!resp || !resp.access_token) return;
+            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: 'Bearer ' + resp.access_token }
+            }).then(r => r.json()).then(profile => {
+              this.setState({ auth: null });
+              this.patch({
+                user: {
+                  email: profile.email,
+                  name: profile.name,
+                  picture: profile.picture,
+                  sub: profile.sub,
+                  provider: 'google'
+                }
+              });
+            }).catch(() => {});
+          }
+        });
+        client.requestAccessToken();
+      },
+      closeAuth: () => this.setState({ auth: null }),
+
+      dayLabel: 'TUESDAY, 12 AUGUST',
+      timerState: st.running ? (st.alarmed ? 'TARGET REACHED' : 'TRACKING') : (st.alarmed ? 'TARGET REACHED' : 'IDLE'),
+      timerBorder: st.alarmed ? 'rgba(196,170,120,0.45)' : (st.running ? 'rgba(124,135,152,0.4)' : 'rgba(255,255,255,0.09)'),
+      timerPulse: st.alarmed ? 'tp-pulse 2400ms ease-in-out infinite' : 'none',
+      tickColor: st.running ? '#8fbfa4' : '#5c5960',
+      tickAnim: st.running ? 'tp-tick 1600ms ease-in-out infinite' : 'none',
+      modeLabel: 'MANUAL + PASSIVE',
+      elapsedLabel: this.clock(st.elapsed),
+      activeCatLabel: st.running ? 'on ' + st.activeCat : 'ready — ' + st.activeCat,
+      targetLabel: st.target ? 'alarm ' + this.targetPhrase(st.target) : 'no alarm',
+      startLabel: st.running ? 'stop and log' : 'start timer',
+      startBg: st.running ? 'rgba(196,170,120,0.9)' : 'linear-gradient(120deg,#c4cad3 0%,#7c8798 50%,#3f4653 100%)',
+      startFg: '#151218',
+      timerHint: st.alarmed
+        ? 'Alarm rang at ' + this.targetPhrase(st.target) + '. Stop to log the block, or keep going.'
+        : (st.target
+            ? 'A chime fires at ' + this.targetPhrase(st.target) + '. Stop logs the block to your day.'
+            : 'No alarm set. The timer still logs when you stop.'),
+      toggleTimer: () => {
+        if (st.running) {
+          this.stopAlarm();
+          const mins = Math.max(1, Math.round(st.elapsed / 60));
+          const startMin = Math.floor(st.startedAt / 60000) % 1440;
+          const next = (this.state.data.today || []).concat([{ start: this.fromMin(startMin), min: mins, cat: st.activeCat }]);
+          next.sort((a, b) => this.toMin(a.start) - this.toMin(b.start));
+          this.patch({ today: next });
+          this.setState({ running: false, elapsed: 0, alarmed: false });
+        } else {
+          this.unlockAudio();
+          this.setState({ running: true, startedAt: Date.now(), elapsed: 0, alarmed: false });
+        }
+      },
+      catChips: d.categories.map(c => ({
+        name: c.name, dot: c.color,
+        bg: st.activeCat === c.name ? 'rgba(124,135,152,0.16)' : 'transparent',
+        border: st.activeCat === c.name ? 'rgba(124,135,152,0.5)' : 'rgba(255,255,255,0.12)',
+        fg: st.activeCat === c.name ? '#dcd9df' : '#a19ea7',
+        pick: () => this.setState({ activeCat: c.name })
+      })),
+      targetChips: [
+        { sec: 10, label: '10s' },
+        { sec: 25 * 60, label: '25m' },
+        { sec: 50 * 60, label: '50m' },
+        { sec: 90 * 60, label: '90m' },
+        { sec: 0, label: 'off' }
+      ].map(t => ({
+        label: t.label,
+        bg: st.target === t.sec ? 'rgba(124,135,152,0.16)' : 'transparent',
+        border: st.target === t.sec ? 'rgba(124,135,152,0.5)' : 'rgba(255,255,255,0.12)',
+        fg: st.target === t.sec ? '#dcd9df' : '#7c7982',
+        pick: () => { this.unlockAudio(); this.setState({ target: t.sec, alarmed: false }); this.patch({ target: t.sec }); }
+      })),
+
+      noEntries: entries.length === 0,
+      blocks: entries.map((e, i) => ({
+        left: (this.toMin(e.start) / 1440 * 100).toFixed(2) + '%',
+        width: (e.min / 1440 * 100).toFixed(2) + '%',
+        fill: this.fillOf(e.cat),
+        delay: (i * 80) + 'ms',
+        title: e.cat + ' · ' + this.dur(e.min)
+      })),
+      rows: entries.map((e, i) => ({
+        start: e.start, dur: this.dur(e.min), label: e.cat, dot: this.cat(e.cat).color,
+        share: tracked ? Math.round(e.min / tracked * 100) + '%' : '',
+        remove: () => {
+          const next = (this.state.data.today || []).slice();
+          next.splice(i, 1);
+          this.patch({ today: next });
+        }
+      })),
+      trackedFoot: entries.length ? this.dur(tracked) + ' tracked · ' + entries.length + ' blocks' : 'nothing logged yet',
+      addStart: st.addStart, addMin: st.addMin,
+      onAddStart: (e) => this.setState({ addStart: e.target.value }),
+      onAddMin: (e) => this.setState({ addMin: e.target.value }),
+      addEntry: () => {
+        const min = parseInt(st.addMin, 10);
+        if (!min || min <= 0) return;
+        const start = /^\d{1,2}:\d{2}$/.test(st.addStart.trim()) ? st.addStart.trim() : '09:00';
+        const next = (this.state.data.today || []).concat([{ start: start, min: min, cat: st.activeCat }]);
+        next.sort((a, b) => this.toMin(a.start) - this.toMin(b.start));
+        this.patch({ today: next });
+        this.setState({ addStart: '', addMin: '' });
+      },
+
+      stats: [
+        { label: 'SCORE', value: entries.length ? String(score) : '—', note: entries.length ? 'productive share of tracked time' : 'log a block to see it', noteColor: '#7c7982' },
+        { label: 'TRACKED', value: entries.length ? this.dur(tracked) : '—', note: 'today', noteColor: '#7c7982' },
+        {
+          label: 'BIGGEST LEAK',
+          value: distract.length ? this.dur(byCat[distract[0]]) : '—',
+          note: distract.length ? distract[0] + ' — ' + Math.round(byCat[distract[0]] / tracked * 100) + '% of your day' : 'nothing pulled you off',
+          noteColor: distract.length ? '#c4aa78' : '#7c7982'
+        },
+        {
+          label: 'VS YESTERDAY',
+          value: (leadDelta >= 0 ? '+' : '−') + this.dur(Math.abs(leadDelta)),
+          note: lead + ' · ' + (d.streak || 0) + ' day streak',
+          noteColor: leadDelta > 0 ? '#8fbfa4' : (leadDelta < 0 ? '#c4aa78' : '#7c7982')
+        }
+      ],
+
+      catRows: d.categories.map((c, i) => ({
+        name: c.name, dot: c.color,
+        weekLabel: this.dur(monthBy[c.name] || 0) + ' this month',
+        flagLabel: c.productive ? 'productive' : 'distracting',
+        flagBg: c.productive ? 'rgba(143,191,164,0.12)' : 'rgba(196,170,120,0.12)',
+        flagBorder: c.productive ? 'rgba(143,191,164,0.35)' : 'rgba(196,170,120,0.35)',
+        flagFg: c.productive ? '#8fbfa4' : '#c4aa78',
+        toggle: () => {
+          const next = d.categories.slice();
+          next[i] = Object.assign({}, c, { productive: !c.productive });
+          this.patch({ categories: next });
+        },
+        remove: () => {
+          const next = d.categories.slice();
+          next.splice(i, 1);
+          this.patch({ categories: next });
+        }
+      })),
+      swatches: SWATCHES.map(col => ({
+        color: col,
+        border: st.newCatColor === col ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.12)',
+        pick: () => this.setState({ newCatColor: col })
+      })),
+      newCatName: st.newCatName,
+      onNewCatName: (e) => this.setState({ newCatName: e.target.value }),
+      newFlagLabel: st.newCatFlag ? 'productive' : 'distracting',
+      newFlagBg: st.newCatFlag ? 'rgba(143,191,164,0.12)' : 'rgba(196,170,120,0.12)',
+      newFlagBorder: st.newCatFlag ? 'rgba(143,191,164,0.35)' : 'rgba(196,170,120,0.35)',
+      newFlagFg: st.newCatFlag ? '#8fbfa4' : '#c4aa78',
+      toggleNewFlag: () => this.setState({ newCatFlag: !st.newCatFlag }),
+      addCat: () => {
+        const name = st.newCatName.trim().toLowerCase();
+        if (!name || d.categories.some(c => c.name === name)) return;
+        this.patch({ categories: d.categories.concat([{ name: name, productive: st.newCatFlag, color: st.newCatColor }]) });
+        this.setState({ newCatName: '' });
+      },
+
+      openNewCat: () => this.setState({ newCatOpen: !st.newCatOpen }),
+      newCatOpen: st.newCatOpen,
+      newCatToggleLabel: st.newCatOpen ? '− close' : '+ new category',
+      addCatHere: () => {
+        const name = st.newCatName.trim().toLowerCase();
+        if (!name || d.categories.some(c => c.name === name)) return;
+        this.patch({ categories: d.categories.concat([{ name: name, productive: st.newCatFlag, color: st.newCatColor }]) });
+        this.setState({ newCatName: '', activeCat: name, newCatOpen: false });
+      },
+
+      monthLabel: 'AUGUST 2026',
+      monthStats: [
+        { label: 'TRACKED', value: Math.round(monthTotal / 60) + 'h', note: activeDays + ' active days' },
+        { label: 'AVERAGE DAY', value: this.dur(Math.round(monthTotal / Math.max(1, activeDays))), note: 'across active days' },
+        { label: 'PRODUCTIVE', value: Math.round(monthProd / monthTotal * 100) + '%', note: 'of tracked time' },
+        { label: 'BEST DAY', value: this.dur(monthMax), note: 'longest tracked day' }
+      ],
+      ...this.heatChart(month),
+      ...this.rhythmChart(month)
+    };
+  }
+}
+
+</script>
+</body>
+</html>

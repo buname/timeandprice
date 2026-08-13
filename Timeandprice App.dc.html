@@ -351,7 +351,7 @@
 </x-dc>
 <div id="tp-alarm-yt" aria-hidden="true" style="position:fixed;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:0;bottom:0;"></div>
 <script type="text/x-dc" data-dc-script data-props="{}">
-const KEY = 'timeandprice.app.v5';
+const KEY = (window.TP_CONFIG && window.TP_CONFIG.appStorageKey) || 'timeandprice.app.v5';
 const SWATCHES = ['#aeb4c0', '#c4aa78', '#8fbfa4', '#b49ab0', '#8a94a8', '#9d9384'];
 
 const SEED = {
@@ -387,7 +387,12 @@ class Component extends DCLogic {
 
   componentDidMount() {
     const d = this.load();
-    this.setState({ data: d, target: d.target || 10 });
+    const next = { data: d, target: d.target || 10 };
+    try {
+      const q = new URLSearchParams(window.location.search).get('auth');
+      if (q && !d.user) next.auth = q === 'signup' ? 'signup' : 'login';
+    } catch (e) { /* ignore */ }
+    this.setState(next);
     this._onScroll = () => {
       const on = window.scrollY > 6;
       if (on !== this.state.scrolled) this.setState({ scrolled: on });
@@ -802,8 +807,10 @@ class Component extends DCLogic {
         }
       },
       authOpen: st.auth !== null,
-      authTitle: 'Welcome back.',
-      authSub: 'Sign in with Google. Your hours stay on this device.',
+      authTitle: st.auth === 'signup' ? 'Start logging.' : 'Welcome back.',
+      authSub: st.auth === 'signup'
+        ? 'Create your account with Google. Your hours stay on this device.'
+        : 'Sign in with Google. Your hours stay on this device.',
       googleHint: (window.TP_CONFIG && window.TP_CONFIG.googleClientId)
         ? 'We’ll add the Vercel origin when we ship.'
         : 'Add your Google Client ID in config.js, then refresh.',

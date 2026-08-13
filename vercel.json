@@ -1,4 +1,5 @@
 {
+  "name": "timeandprice",
   "rewrites": [
     { "source": "/", "destination": "/Timeandprice Landing.dc.html" },
     { "source": "/app", "destination": "/Timeandprice App.dc.html" }

@@ -351,43 +351,20 @@
 </x-dc>
 <div id="tp-alarm-yt" aria-hidden="true" style="position:fixed;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:0;bottom:0;"></div>
 <script type="text/x-dc" data-dc-script data-props="{}">
-const KEY = (window.TP_CONFIG && window.TP_CONFIG.appStorageKey) || 'timeandprice.app.v5';
 const SWATCHES = ['#aeb4c0', '#c4aa78', '#8fbfa4', '#b49ab0', '#8a94a8', '#9d9384'];
-
-const SEED = {
-  user: null,
-  categories: [
-    { name: 'math', productive: true, color: '#aeb4c0' },
-    { name: 'coding', productive: true, color: '#8a94a8' },
-    { name: 'homework', productive: true, color: '#9d9384' },
-    { name: 'free time', productive: false, color: '#c4aa78' },
-    { name: 'pause', productive: false, color: '#6a6771' }
-  ],
-  today: [
-    { start: '09:00', min: 100, cat: 'math' },
-    { start: '10:40', min: 45, cat: 'coding' },
-    { start: '11:25', min: 15, cat: 'pause' },
-    { start: '11:40', min: 50, cat: 'homework' },
-    { start: '12:30', min: 65, cat: 'free time' },
-    { start: '13:35', min: 190, cat: 'math' }
-  ],
-  yesterdayLead: 210,
-  streak: 12,
-  target: 10,
-  month: null
-};
+const SEED = Object.assign({ user: null }, window.TP_blankAccount());
 
 class Component extends DCLogic {
   state = {
     data: null, screen: 'today', scrolled: false,
     auth: null, authEmail: '', authPass: '',
-    running: false, activeCat: 'math', startedAt: 0, elapsed: 0, target: 10, alarmed: false,
+    running: false, activeCat: 'math', startedAt: 0, elapsed: 0, target: 25 * 60, alarmed: false,
     addStart: '', addMin: '', newCatName: '', newCatColor: '#aeb4c0', newCatFlag: true, newCatOpen: false
   };
 
   componentDidMount() {
     const d = this.load();
-    const next = { data: d, target: d.target || 10 };
+    const next = { data: d, target: d.target || 25 * 60, activeCat: ((d.categories || [])[0] || {}).name || 'math' };
     try {
       const q = new URLSearchParams(window.location.search).get('auth');
       if (q && !d.user) next.auth = q === 'signup' ? 'signup' : 'login';
@@ -416,19 +393,76 @@ class Component extends DCLogic {
     try { if (this._yt && this._yt.pauseVideo) this._yt.pauseVideo(); } catch (e) {}
   }
 
+  emptyData(user) {
+    return Object.assign({}, window.TP_blankAccount(), { user: user || null });
+  }
   load() {
-    try {
-      const raw = window.localStorage.getItem(KEY);
-      if (raw) return Object.assign({}, SEED, JSON.parse(raw));
-      window.localStorage.setItem(KEY, JSON.stringify(SEED));
-    } catch (e) { /* storage unavailable */ }
-    return SEED;
+    const session = window.TP_readSession();
+    const user = session && session.user;
+    if (!user) return this.emptyData(null);
+    const acc = window.TP_ensureAccount(user);
+    return this.rollToday(Object.assign({}, window.TP_blankAccount(), acc, { user: user }));
+  }
+  rollToday(data) {
+    const key = new Date().toDateString();
+    if (data.todayKey === key) return data;
+    const next = Object.assign({}, data, { today: [], todayKey: key });
+    if (data.todayKey) {
+      const yest = new Date();
+      yest.setDate(yest.getDate() - 1);
+      if (data.todayKey === yest.toDateString()) {
+        const lead = ((data.categories || []).find(c => c.productive) || { name: 'math' }).name;
+        next.yesterdayLead = (data.today || []).filter(e => e.cat === lead).reduce((s, e) => s + e.min, 0);
+        next.streak = (data.today || []).length ? (data.streak || 0) + 1 : 0;
+      } else {
+        next.yesterdayLead = 0;
+        next.streak = 0;
+      }
+    }
+    if (next.user) {
+      const acc = Object.assign({}, next);
+      delete acc.user;
+      window.TP_saveAccount(next.user, acc);
+    }
+    return next;
+  }
+  applyToday(entries) {
+    this.patch({
+      today: entries,
+      todayKey: new Date().toDateString(),
+      days: this.stampDay(entries)
+    });
   }
   save(next) {
     this.setState({ data: next });
-    try { window.localStorage.setItem(KEY, JSON.stringify(next)); } catch (e) { /* ignore */ }
+    if (next.user) {
+      const acc = Object.assign({}, next);
+      delete acc.user;
+      window.TP_saveAccount(next.user, acc);
+      window.TP_writeSession(next.user);
+    } else {
+      window.TP_writeSession(null);
+    }
   }
   patch(part) { this.save(Object.assign({}, this.state.data || SEED, part)); }
+  signIn(profile) {
+    const user = {
+      email: profile.email,
+      name: profile.name,
+      picture: profile.picture,
+      sub: profile.sub,
+      provider: 'google'
+    };
+    const acc = window.TP_ensureAccount(user);
+    window.TP_writeSession(user);
+    const data = Object.assign({}, window.TP_blankAccount(), acc, { user: user });
+    this.setState({
+      auth: null,
+      data: data,
+      target: data.target || 25 * 60,
+      activeCat: ((data.categories || [])[0] || {}).name || 'math'
+    });
+  }
 
   bootYt() {
     if (window.YT && window.YT.Player) { this.makeYt(); return; }
@@ -567,25 +601,15 @@ class Component extends DCLogic {
 
   monthData() {
     const d = this.state.data || SEED;
-    if (d.month) return d.month;
-    const cats = d.categories.map(c => c.name);
-    let seed = 11;
-    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const now = new Date();
+    const year = now.getFullYear(), month = now.getMonth();
+    const last = new Date(year, month + 1, 0).getDate();
+    const logged = d.days || {};
     const days = [];
-    const year = 2026, month = 7, last = new Date(year, month + 1, 0).getDate();
     for (let day = 1; day <= last; day++) {
       const date = new Date(year, month, day);
-      const weekend = date.getDay() === 0 || date.getDay() === 6;
-      const total = Math.round(weekend ? 90 + rnd() * 160 : 330 + rnd() * 200);
-      const mins = {};
-      let left = total;
-      cats.forEach((c, j) => {
-        const share = j === 0 ? 0.55 : (j === cats.length - 1 ? 1 : 0.18 + rnd() * 0.12);
-        const v = j === cats.length - 1 ? left : Math.round(total * share * (0.7 + rnd() * 0.6));
-        const val = Math.max(0, Math.min(left, v));
-        mins[c] = val; left -= val;
-      });
-      days.push({ date: date, total: total, mins: mins });
+      const rec = logged[date.toDateString()];
+      days.push({ date: date, total: rec ? rec.total : 0, mins: rec ? rec.mins : {} });
     }
     return days;
   }
@@ -599,17 +623,30 @@ class Component extends DCLogic {
     return 1;
   }
 
+  stampDay(entries) {
+    const mins = {};
+    let total = 0;
+    (entries || []).forEach(e => {
+      mins[e.cat] = (mins[e.cat] || 0) + e.min;
+      total += e.min;
+    });
+    const days = Object.assign({}, (this.state.data || SEED).days || {});
+    days[new Date().toDateString()] = { total: total, mins: mins };
+    return days;
+  }
+
   heatChart(month) {
     const LEVELS = ['#1c1c1e', '#3a3a3e', '#6a6a70', '#a8a8ae', '#f2f2f4'];
     const byKey = {};
+    const logged = (this.state.data || SEED).days || {};
+    Object.keys(logged).forEach(k => { byKey[k] = logged[k].total || 0; });
     month.forEach((x, i) => {
-      const date = x.date instanceof Date ? x.date : new Date(2026, 7, i + 1);
-      byKey[date.toDateString()] = x.total;
+      const date = x.date instanceof Date ? x.date : new Date(x.date);
+      if (date && !isNaN(date)) byKey[date.toDateString()] = x.total;
     });
-    let seed = 29;
-    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-    const rangeStart = new Date(2025, 8, 1);
-    const rangeEnd = new Date(2026, 7, 31);
+    const rangeEnd = new Date();
+    rangeEnd.setHours(0, 0, 0, 0);
+    const rangeStart = new Date(rangeEnd.getFullYear() - 1, rangeEnd.getMonth(), 1);
     const start = new Date(rangeStart);
     start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
     const end = new Date(rangeEnd);
@@ -620,13 +657,7 @@ class Component extends DCLogic {
       const inRange = cursor >= rangeStart && cursor <= rangeEnd;
       const key = cursor.toDateString();
       let total = 0;
-      if (inRange) {
-        if (byKey[key] != null) total = byKey[key];
-        else {
-          const weekend = cursor.getDay() === 0 || cursor.getDay() === 6;
-          total = Math.round(weekend ? 80 + rnd() * 150 : 300 + rnd() * 220);
-        }
-      }
+      if (inRange && byKey[key] != null) total = byKey[key];
       totals.push({ date: new Date(cursor), inRange: inRange, total: total });
       cursor.setDate(cursor.getDate() + 1);
     }
@@ -752,12 +783,15 @@ class Component extends DCLogic {
       : meet + ' stay thin';
 
     const legend = cats.filter(c => used[c.name]).map(c => ({ name: c.name, dot: c.color }));
+    const hasRhythm = rows.some(r => r.segs.length);
 
     return {
       rhythmRows: rows,
       rhythmTicks: ['00', '06', '12', '18', '24'],
       rhythmLegend: legend,
-      rhythmInsight: focusBit + '. ' + meetBit + '.'
+      rhythmInsight: hasRhythm
+        ? focusBit + '. ' + meetBit + '.'
+        : 'Nothing logged yet. Start a timer and the week takes shape.'
     };
   }
 
@@ -779,7 +813,7 @@ class Component extends DCLogic {
 
     const month = this.monthData();
     const monthTotal = month.reduce((s, x) => s + x.total, 0);
-    const monthMax = month.reduce((m, x) => Math.max(m, x.total), 0) || 1;
+    const monthMax = month.reduce((m, x) => Math.max(m, x.total), 0);
     const monthBy = {};
     month.forEach(x => Object.keys(x.mins).forEach(k => { monthBy[k] = (monthBy[k] || 0) + x.mins[k]; }));
     const monthKeys = Object.keys(monthBy).filter(k => monthBy[k] > 0).sort((a, b) => monthBy[b] - monthBy[a]);
@@ -801,7 +835,8 @@ class Component extends DCLogic {
       onAuthAction: () => {
         if (d.user) {
           try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
-          this.patch({ user: null });
+          window.TP_writeSession(null);
+          this.setState({ data: this.emptyData(null), target: 25 * 60, activeCat: 'math' });
         } else {
           this.setState({ auth: 'login' });
         }
@@ -811,9 +846,7 @@ class Component extends DCLogic {
       authSub: st.auth === 'signup'
         ? 'Create your account with Google. Your hours stay on this device.'
         : 'Sign in with Google. Your hours stay on this device.',
-      googleHint: (window.TP_CONFIG && window.TP_CONFIG.googleClientId)
-        ? 'We’ll add the Vercel origin when we ship.'
-        : 'Add your Google Client ID in config.js, then refresh.',
+      googleHint: 'Each Google account keeps its own hours on this device.',
       googleSignIn: () => {
         const id = window.TP_CONFIG && window.TP_CONFIG.googleClientId;
         if (!id) return;
@@ -825,25 +858,14 @@ class Component extends DCLogic {
             if (!resp || !resp.access_token) return;
             fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { Authorization: 'Bearer ' + resp.access_token }
-            }).then(r => r.json()).then(profile => {
-              this.setState({ auth: null });
-              this.patch({
-                user: {
-                  email: profile.email,
-                  name: profile.name,
-                  picture: profile.picture,
-                  sub: profile.sub,
-                  provider: 'google'
-                }
-              });
-            }).catch(() => {});
+            }).then(r => r.json()).then(profile => this.signIn(profile)).catch(() => {});
           }
         });
         client.requestAccessToken();
       },
       closeAuth: () => this.setState({ auth: null }),
 
-      dayLabel: 'TUESDAY, 12 AUGUST',
+      dayLabel: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase(),
       timerState: st.running ? (st.alarmed ? 'TARGET REACHED' : 'TRACKING') : (st.alarmed ? 'TARGET REACHED' : 'IDLE'),
       timerBorder: st.alarmed ? 'rgba(196,170,120,0.45)' : (st.running ? 'rgba(124,135,152,0.4)' : 'rgba(255,255,255,0.09)'),
       timerPulse: st.alarmed ? 'tp-pulse 2400ms ease-in-out infinite' : 'none',
@@ -868,7 +890,7 @@ class Component extends DCLogic {
           const startMin = Math.floor(st.startedAt / 60000) % 1440;
           const next = (this.state.data.today || []).concat([{ start: this.fromMin(startMin), min: mins, cat: st.activeCat }]);
           next.sort((a, b) => this.toMin(a.start) - this.toMin(b.start));
-          this.patch({ today: next });
+          this.applyToday(next);
           this.setState({ running: false, elapsed: 0, alarmed: false });
         } else {
           this.unlockAudio();
@@ -910,7 +932,7 @@ class Component extends DCLogic {
         remove: () => {
           const next = (this.state.data.today || []).slice();
           next.splice(i, 1);
-          this.patch({ today: next });
+          this.applyToday(next);
         }
       })),
       trackedFoot: entries.length ? this.dur(tracked) + ' tracked · ' + entries.length + ' blocks' : 'nothing logged yet',
@@ -923,7 +945,7 @@ class Component extends DCLogic {
         const start = /^\d{1,2}:\d{2}$/.test(st.addStart.trim()) ? st.addStart.trim() : '09:00';
         const next = (this.state.data.today || []).concat([{ start: start, min: min, cat: st.activeCat }]);
         next.sort((a, b) => this.toMin(a.start) - this.toMin(b.start));
-        this.patch({ today: next });
+        this.applyToday(next);
         this.setState({ addStart: '', addMin: '' });
       },
 
@@ -938,7 +960,7 @@ class Component extends DCLogic {
         },
         {
           label: 'VS YESTERDAY',
-          value: (leadDelta >= 0 ? '+' : '−') + this.dur(Math.abs(leadDelta)),
+          value: (entries.length || d.yesterdayLead) ? ((leadDelta >= 0 ? '+' : '−') + this.dur(Math.abs(leadDelta))) : '—',
           note: lead + ' · ' + (d.streak || 0) + ' day streak',
           noteColor: leadDelta > 0 ? '#8fbfa4' : (leadDelta < 0 ? '#c4aa78' : '#7c7982')
         }
@@ -991,12 +1013,12 @@ class Component extends DCLogic {
         this.setState({ newCatName: '', activeCat: name, newCatOpen: false });
       },
 
-      monthLabel: 'AUGUST 2026',
+      monthLabel: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase(),
       monthStats: [
         { label: 'TRACKED', value: Math.round(monthTotal / 60) + 'h', note: activeDays + ' active days' },
-        { label: 'AVERAGE DAY', value: this.dur(Math.round(monthTotal / Math.max(1, activeDays))), note: 'across active days' },
-        { label: 'PRODUCTIVE', value: Math.round(monthProd / monthTotal * 100) + '%', note: 'of tracked time' },
-        { label: 'BEST DAY', value: this.dur(monthMax), note: 'longest tracked day' }
+        { label: 'AVERAGE DAY', value: activeDays ? this.dur(Math.round(monthTotal / activeDays)) : '—', note: 'across active days' },
+        { label: 'PRODUCTIVE', value: monthTotal ? Math.round(monthProd / monthTotal * 100) + '%' : '0%', note: 'of tracked time' },
+        { label: 'BEST DAY', value: activeDays ? this.dur(monthMax) : '—', note: 'longest tracked day' }
       ],
       ...this.heatChart(month),
       ...this.rhythmChart(month)

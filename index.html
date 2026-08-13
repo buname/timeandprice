@@ -340,7 +340,6 @@ class Component extends DCLogic {
   startGoogle(mode) {
     const appHref = 'app.html?auth=' + (mode || 'login');
     const id = window.TP_CONFIG && window.TP_CONFIG.googleClientId;
-    const appKey = (window.TP_CONFIG && window.TP_CONFIG.appStorageKey) || 'timeandprice.app.v5';
     if (!id || !window.google || !google.accounts || !google.accounts.oauth2) {
       window.location.href = appHref;
       return;
@@ -353,18 +352,15 @@ class Component extends DCLogic {
         fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: 'Bearer ' + resp.access_token }
         }).then(r => r.json()).then(profile => {
-          try {
-            const raw = window.localStorage.getItem(appKey);
-            const data = raw ? JSON.parse(raw) : {};
-            data.user = {
-              email: profile.email,
-              name: profile.name,
-              picture: profile.picture,
-              sub: profile.sub,
-              provider: 'google'
-            };
-            window.localStorage.setItem(appKey, JSON.stringify(data));
-          } catch (e) { /* ignore */ }
+          const user = {
+            email: profile.email,
+            name: profile.name,
+            picture: profile.picture,
+            sub: profile.sub,
+            provider: 'google'
+          };
+          window.TP_ensureAccount(user);
+          window.TP_writeSession(user);
           window.location.href = 'app.html';
         }).catch(() => { window.location.href = appHref; });
       }
